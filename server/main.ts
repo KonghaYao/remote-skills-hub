@@ -83,8 +83,40 @@ app.get("/api/skills", async (c) => {
   return c.json({ skills: items, total, page, limit });
 });
 
-app.get("/api/skills/:name", (c) => {
-  return c.json({ error: "not implemented" }, 501);
+app.get("/api/skills/:name", async (c) => {
+  const name = `@skill/${c.req.param("name")}`;
+  const metaUrl = `${REGISTRY_URL}/${encodeURIComponent(name)}`;
+
+  try {
+    const res = await fetch(metaUrl, {
+      headers: { "Accept": "application/json", ...authHeaders() },
+    });
+    if (!res.ok) return c.json({ error: "package not found" }, 404);
+
+    const pkg = await res.json() as {
+      name: string;
+      description: string;
+      "dist-tags": Record<string, string>;
+      versions: Record<string, unknown>;
+      time: Record<string, string>;
+      maintainers: Array<{ name: string; email: string }>;
+    };
+
+    const versions = Object.keys(pkg.versions || {}).sort().reverse();
+
+    return c.json({
+      name: pkg.name,
+      description: pkg.description || "",
+      latest: pkg["dist-tags"]?.latest || "",
+      distTags: pkg["dist-tags"] || {},
+      versions,
+      createdAt: pkg.time?.created || "",
+      updatedAt: pkg.time?.modified || "",
+      maintainers: pkg.maintainers || [],
+    });
+  } catch (e) {
+    return c.json({ error: `failed to fetch package: ${String(e)}` }, 502);
+  }
 });
 
 app.get("/api/skills/:name/SKILL.md", (c) => {
