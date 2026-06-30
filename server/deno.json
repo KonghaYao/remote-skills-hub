@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --watch main.ts",
+    "start": "deno run --allow-net --allow-read --allow-write --allow-env main.ts"
+  },
+  "imports": {
+    "hono": "npm:hono@^4",
+    "hono/deno": "npm:hono@^4/dist/middleware/serve-static/index.js",
+    "marked": "npm:marked@^15"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}
