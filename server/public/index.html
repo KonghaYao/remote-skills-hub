@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Hub</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/">Skill Hub</a></h1>
+    <nav>
+      <input type="search" id="searchInput" placeholder="搜索 skill..." autocomplete="off">
+      <button id="searchBtn">搜索</button>
+    </nav>
+  </header>
+
+  <main>
+    <aside id="sidebar">
+      <div id="skillTree"></div>
+    </aside>
+    <section id="content">
+      <div id="skillList"></div>
+    </section>
+    <aside id="detail-panel" class="hidden">
+      <div id="skillDetail"></div>
+    </aside>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/tree.js"></script>
+  <script src="/static/js/list.js"></script>
+  <script src="/static/js/detail.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
