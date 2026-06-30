@@ -159,8 +159,32 @@ app.get("/api/skills/:name/SKILL.md", async (c) => {
   }
 });
 
-app.get("/api/search", (c) => {
-  return c.json({ results: [] });
+app.get("/api/search", async (c) => {
+  const q = c.req.query("q");
+  if (!q) return c.json({ results: [] });
+
+  try {
+    const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill/*+${encodeURIComponent(q)}&size=50`;
+    const res = await fetch(searchUrl, {
+      headers: { "Accept": "application/json", ...authHeaders() },
+    });
+    if (!res.ok) return c.json({ error: "search failed" }, 502);
+
+    const data = await res.json() as { objects: Array<{ package: { name: string; version: string; description: string; date: string }; score: { final: number } }> };
+
+    const results = (data.objects || []).map((o) => ({
+      name: o.package?.name ?? "",
+      version: o.package?.version ?? "",
+      description: o.package?.description || "",
+      updated: o.package?.date ?? "",
+      score: o.score?.final ?? 0,
+    }));
+
+    return c.json({ results });
+  } catch (e) {
+    console.error("search error:", e);
+    return c.json({ error: `search failed: ${String(e)}` }, 502);
+  }
 });
 
 try {
