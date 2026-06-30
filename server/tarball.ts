@@ -86,9 +86,20 @@ export async function extractSkillMd(
 
   let dirExists = false;
   try {
-    await Deno.stat(extractDir);
-    dirExists = true;
+    const stat = await Deno.stat(extractDir);
+    dirExists = stat.isDirectory;
   } catch { /* does not exist */ }
+
+  if (dirExists) {
+    // Check if previous extraction was actually successful
+    try {
+      await Deno.readTextFile(join(extractDir, "package", "SKILL.md"));
+    } catch {
+      // Directory exists but extraction was incomplete, clean up and re-extract
+      try { await Deno.remove(extractDir, { recursive: true }); } catch { /* best effort */ }
+      dirExists = false;
+    }
+  }
 
   if (!dirExists) {
     await Deno.mkdir(extractDir, { recursive: true });

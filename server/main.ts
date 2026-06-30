@@ -53,22 +53,42 @@ app.get("/api/skills", async (c) => {
 
   let skills: Array<{ name: string; version: string; description: string; updated: string; score: number }> = [];
   try {
-    const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill/*&size=250`;
-    const res = await fetch(searchUrl, {
+    // Use Verdaccio packages API for reliable listing
+    const pkgsUrl = `${REGISTRY_URL}/-/verdaccio/data/packages`;
+    const pkgsRes = await fetch(pkgsUrl, {
       headers: { "Accept": "application/json", ...authHeaders() },
     });
-    if (!res.ok) return c.json({ error: "registry unavailable" }, 502);
 
-    type RegistryObject = { package?: { name: string; version: string; description: string; date: string }; score?: { final: number } };
-    const data = await res.json() as { objects?: RegistryObject[] };
+    if (pkgsRes.ok) {
+      const pkgs = await pkgsRes.json() as Array<{ name: string; version: string; description: string; time?: number | string }>;
+      skills = pkgs
+        .filter((p) => p.name?.startsWith("@skill/"))
+        .map((p) => ({
+          name: p.name,
+          version: p.version || "0.0.0",
+          description: p.description || "",
+          updated: typeof p.time === "number" ? new Date(p.time).toISOString() : String(p.time || ""),
+          score: 0,
+        }));
+    } else {
+      // Fallback to npm search API
+      const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill&size=250`;
+      const res = await fetch(searchUrl, {
+        headers: { "Accept": "application/json", ...authHeaders() },
+      });
+      if (!res.ok) return c.json({ error: "registry unavailable" }, 502);
 
-    skills = (data.objects || []).filter((o) => o.package).map((o) => ({
-      name: o.package!.name,
-      version: o.package!.version,
-      description: o.package!.description || "",
-      updated: o.package!.date,
-      score: o.score?.final ?? 0,
-    }));
+      type RegistryObject = { package?: { name: string; version: string; description: string; date: string }; score?: { final: number } };
+      const data = await res.json() as { objects?: RegistryObject[] };
+
+      skills = (data.objects || []).filter((o) => o.package).map((o) => ({
+        name: o.package!.name,
+        version: o.package!.version,
+        description: o.package!.description || "",
+        updated: o.package!.date,
+        score: o.score?.final ?? 0,
+      }));
+    }
   } catch (err) {
     return c.json({ error: String(err) }, 502);
   }
