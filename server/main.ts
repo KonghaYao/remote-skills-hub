@@ -79,6 +79,13 @@ app.all("/npm/*", async (c) => {
 // --- API: list all @skill packages ---
 app.get("/api/skills", async (c) => {
   try {
+    let page = parseInt(c.req.query("page") || "1");
+    let limit = parseInt(c.req.query("limit") || "12");
+    const sort = c.req.query("sort") || "newest";
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1 || limit > 100) limit = 12;
+
     const url = `${REGISTRY_URL}/-/verdaccio/data/packages`;
     const res = await fetch(url, { headers: authHeaders() });
     if (!res.ok) {
@@ -90,13 +97,27 @@ app.get("/api/skills", async (c) => {
       description: string;
       time: string;
     }> = await res.json();
-    const skills = packages
+
+    let skills = packages
       .filter((p) => p.name?.startsWith("@skill/"))
       .map((p) => ({
         ...p,
         updated: p.time,
       }));
-    return c.json({ skills, total: skills.length });
+
+    // 排序
+    if (sort === "name") {
+      skills.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      // 默认按时间降序（覆盖 "newest" 及任何无效值）
+      skills.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    }
+
+    const total = skills.length;
+    const start = (page - 1) * limit;
+    const items = skills.slice(start, start + limit);
+
+    return c.json({ skills: items, total, page, limit });
   } catch (e) {
     return c.json({ error: (e as Error).message }, 500);
   }
