@@ -203,16 +203,24 @@ app.get("/api/skills/:name/SKILL.md", async (c) => {
 // --- API: search ---
 app.get("/api/search", async (c) => {
   const q = c.req.query("q");
-  if (!q) return c.json({ error: "missing query" }, 400);
+  if (!q) return c.json({ results: [] });
   try {
     const url =
       `${REGISTRY_URL}/-/v1/search?text=@skill/${encodeURIComponent(q)}&size=20`;
     const res = await fetch(url, { headers: authHeaders() });
-    if (!res.ok) return c.json({ error: `search failed: ${res.status}` }, 502);
+    if (!res.ok) return c.json({ results: [] });
     const data = await res.json();
-    return c.json(data);
+    const results = (data.objects || []).map((o: {
+      package?: { name: string; version: string; description: string; date: string };
+    }) => ({
+      name: o.package?.name ?? "",
+      version: o.package?.version ?? "",
+      description: o.package?.description ?? "",
+      updated: o.package?.date ?? "",
+    }));
+    return c.json({ results });
   } catch (e) {
-    return c.json({ error: (e as Error).message }, 500);
+    return c.json({ results: [] });
   }
 });
 
