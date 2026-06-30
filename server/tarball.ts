@@ -74,7 +74,7 @@ export async function extractSkillMd(
   const cached = await getCachedSKILL(name, version);
   if (cached) return cached;
 
-  const tmp = ensureTempDir();
+  const tmp = await ensureTempDir();
   let tgzPath: string;
   try {
     tgzPath = await cacheTarball(tarballUrl, tmp);
