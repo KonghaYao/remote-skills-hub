@@ -20,7 +20,19 @@
       <div id="skillTree"></div>
     </aside>
     <section id="content">
-      <div id="skillList"></div>
+      <div class="controls-bar">
+        <div class="controls-left">
+          <span class="result-count" id="resultCount"></span>
+        </div>
+        <div class="controls-right">
+          <select id="sortSelect" class="sort-select">
+            <option value="newest">最新发布</option>
+            <option value="name">名称排序</option>
+          </select>
+        </div>
+      </div>
+      <div id="skillList" class="skill-grid"></div>
+      <div id="pagination" class="pagination"></div>
     </section>
     <aside id="detail-panel" class="hidden">
       <div id="skillDetail"></div>

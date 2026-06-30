@@ -7,6 +7,10 @@ const App = {
     SkillList.load();
     SkillTree.load();
 
+    document.getElementById("sortSelect").addEventListener("change", (e) => {
+      SkillList.load(1, e.target.value);
+    });
+
     document.getElementById("searchBtn").addEventListener("click", () => this.search());
     document.getElementById("searchInput").addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.search();
@@ -19,9 +23,11 @@ const App = {
 
   async search() {
     const q = document.getElementById("searchInput").value.trim();
-    if (!q) return SkillList.load();
+    if (!q) return SkillList.load(1, SkillList.currentSort);
 
-    SkillList.container.innerHTML = '<div class="spinner"></div>';
+    SkillList.container.innerHTML = SkillList.skeletonHTML(4);
+    SkillList.pagination.innerHTML = "";
+    SkillList.countLabel.textContent = "";
     try {
       const data = await API.search(q);
       SkillList.render(data.results || []);

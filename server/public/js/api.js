@@ -5,16 +5,16 @@ const API = {
     return res.json();
   },
 
-  listSkills(page = 1, limit = 20) {
-    return this.fetchJson(`/api/skills?page=${page}&limit=${limit}`);
+  listSkills(page = 1, limit = 12, sort = "newest") {
+    return this.fetchJson(`/api/skills?page=${page}&limit=${limit}&sort=${sort}`);
   },
 
   getSkill(name) {
     return this.fetchJson(`/api/skills/${encodeURIComponent(name)}`);
   },
 
-  getSkillMd(name, version = "latest") {
-    return this.fetchJson(`/api/skills/${encodeURIComponent(name)}/SKILL.md?version=${version}`);
+  getSkillMd(name) {
+    return this.fetchJson(`/api/skills/${encodeURIComponent(name)}/SKILL.md`);
   },
 
   search(q) {
