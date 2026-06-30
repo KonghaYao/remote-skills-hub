@@ -5,7 +5,7 @@
   },
   "imports": {
     "hono": "npm:hono@^4",
-    "hono/deno": "npm:hono@^4/dist/middleware/serve-static/index.js",
+    "hono/deno": "npm:hono/deno",
     "marked": "npm:marked@^15"
   },
   "compilerOptions": {

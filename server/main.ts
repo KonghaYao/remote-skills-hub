@@ -1,7 +1,9 @@
 import { Hono, cors, logger, serveStatic } from "./deps.ts";
 
 const REGISTRY_URL = Deno.env.get("REGISTRY_URL") || "http://localhost:4873";
+const REGISTRY_TOKEN = Deno.env.get("REGISTRY_TOKEN");
 const port = parseInt(Deno.env.get("PORT") || "3000");
+const INDEX_HTML = Deno.readTextFileSync("./public/index.html");
 
 const app = new Hono();
 
@@ -11,20 +13,20 @@ app.use("*", cors());
 // --- Static portal ---
 app.use("/static/*", serveStatic({ root: "./public" }));
 app.get("/", (c) => {
-  const html = Deno.readTextFileSync("./public/index.html");
-  return c.html(html);
+  return c.html(INDEX_HTML);
 });
 
 // --- Proxy: pass-through npm registry APIs ---
 app.all("/npm/*", async (c) => {
-  const path = c.req.path.replace("/npm", "");
-  const url = `${REGISTRY_URL}${path}${c.req.query() ? "?" + new URLSearchParams(c.req.query()).toString() : ""}`;
+  const upstreamPath = c.req.path.replace(/^\/npm/, "");
+  const rawUrl = new URL(c.req.raw.url);
+  const url = `${REGISTRY_URL}${upstreamPath}${rawUrl.search}`;
 
   const res = await fetch(url, {
     method: c.req.method,
     headers: {
       "Accept": "application/json",
-      ...(Deno.env.get("REGISTRY_TOKEN") ? { Authorization: `Bearer ${Deno.env.get("REGISTRY_TOKEN")}` } : {}),
+      ...(REGISTRY_TOKEN ? { Authorization: `Bearer ${REGISTRY_TOKEN}` } : {}),
     },
   });
 
@@ -35,20 +37,25 @@ app.all("/npm/*", async (c) => {
 });
 
 // --- Extended APIs (stubs for now) ---
-app.get("/api/skills", async (c) => {
+app.get("/api/skills", (c) => {
   return c.json({ skills: [], total: 0 });
 });
 
-app.get("/api/skills/:name", async (c) => {
+app.get("/api/skills/:name", (c) => {
   return c.json({ error: "not implemented" }, 501);
 });
 
-app.get("/api/skills/:name/SKILL.md", async (c) => {
+app.get("/api/skills/:name/SKILL.md", (c) => {
   return c.json({ error: "not implemented" }, 501);
 });
 
-app.get("/api/search", async (c) => {
+app.get("/api/search", (c) => {
   return c.json({ results: [] });
 });
 
-Deno.serve({ port }, app.fetch);
+try {
+  Deno.serve({ port }, app.fetch);
+} catch (err) {
+  console.error("Failed to start server:", err);
+  Deno.exit(1);
+}
