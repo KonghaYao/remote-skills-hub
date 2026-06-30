@@ -84,7 +84,7 @@ app.get("/api/skills", async (c) => {
     const sort = c.req.query("sort") || "newest";
 
     if (isNaN(page) || page < 1) page = 1;
-    if (isNaN(limit) || limit < 1 || limit > 100) limit = 12;
+    if (isNaN(limit) || limit < 1 || limit > 250) limit = 12;
 
     const url = `${REGISTRY_URL}/-/verdaccio/data/packages`;
     const res = await fetch(url, { headers: authHeaders() });
