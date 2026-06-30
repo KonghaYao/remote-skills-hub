@@ -143,9 +143,18 @@ app.get("/api/skills/:name/SKILL.md", async (c) => {
     }
 
     const skillMd = await extractSkillMd(name, resolvedVersion, verData.dist.tarball);
-    const html = marked.parse(skillMd) as string;
+    let html = marked.parse(skillMd) as string;
+    // Sanitize HTML to prevent XSS: strip dangerous tags and event handlers
+    html = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+      .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
+      .replace(/\son\w+\s*=\s*'[^']*'/gi, "");
     return c.json({ name, version: resolvedVersion, html, raw: skillMd });
   } catch (e) {
+    console.error("SKILL.md extraction error:", e);
     return c.json({ error: `failed to extract SKILL.md: ${String(e)}` }, 500);
   }
 });
