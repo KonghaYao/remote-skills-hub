@@ -1,0 +1,40 @@
+storage: /verdaccio/storage
+plugins: /verdaccio/plugins
+
+web:
+  title: Skill Hub Registry
+  enable: true
+
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd
+    max_users: -1
+
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+    maxage: 30m
+
+packages:
+  '@skill/*':
+    access: $authenticated
+    publish: $authenticated
+    unpublish: $authenticated
+
+  '**':
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
+    proxy: npmjs
+
+server:
+  keepAliveTimeout: 60
+
+middlewares:
+  audit:
+    enabled: true
+
+logs:
+  type: stdout
+  format: pretty
+  level: http
