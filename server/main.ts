@@ -1,4 +1,5 @@
-import { Hono, cors, logger, serveStatic } from "./deps.ts";
+import { Hono, cors, logger, marked, serveStatic } from "./deps.ts";
+import { extractSkillMd } from "./tarball.ts";
 
 const REGISTRY_URL = Deno.env.get("REGISTRY_URL") || "http://localhost:4873";
 const REGISTRY_TOKEN = Deno.env.get("REGISTRY_TOKEN");
@@ -119,8 +120,34 @@ app.get("/api/skills/:name", async (c) => {
   }
 });
 
-app.get("/api/skills/:name/SKILL.md", (c) => {
-  return c.json({ error: "not implemented" }, 501);
+app.get("/api/skills/:name/SKILL.md", async (c) => {
+  const name = `@skill/${c.req.param("name")}`;
+  const version = c.req.query("version") || "latest";
+
+  const metaUrl = `${REGISTRY_URL}/${encodeURIComponent(name)}`;
+  try {
+    const metaRes = await fetch(metaUrl, {
+      headers: { "Accept": "application/json", ...authHeaders() },
+    });
+    if (!metaRes.ok) return c.json({ error: "package not found" }, 404);
+
+    const pkg = await metaRes.json() as {
+      "dist-tags": Record<string, string>;
+      versions: Record<string, { dist: { tarball: string } }>;
+    };
+
+    const resolvedVersion = pkg["dist-tags"]?.[version] || version;
+    const verData = pkg.versions?.[resolvedVersion];
+    if (!verData?.dist?.tarball) {
+      return c.json({ error: "version not found" }, 404);
+    }
+
+    const skillMd = await extractSkillMd(name, resolvedVersion, verData.dist.tarball);
+    const html = marked.parse(skillMd) as string;
+    return c.json({ name, version: resolvedVersion, html, raw: skillMd });
+  } catch (e) {
+    return c.json({ error: `failed to extract SKILL.md: ${String(e)}` }, 500);
+  }
 });
 
 app.get("/api/search", (c) => {
