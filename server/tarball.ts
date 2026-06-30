@@ -138,12 +138,95 @@ export async function extractSkillMd(
 
   await setCachedSKILL(name, version, skillMdContent);
 
-  // Clean up extracted tarball directory
+  return skillMdContent;
+}
+
+// ---- File listing / reading ----
+
+function extractDirPath(name: string, version: string, tmp: string): string {
+  return join(tmp, `${name.replace(/\//g, "_")}@${version}`);
+}
+
+async function ensureSkillExtracted(
+  name: string,
+  version: string,
+  tarballUrl: string,
+): Promise<string> {
+  const tmp = await ensureTempDir();
+  const extractDir = extractDirPath(name, version, tmp);
+
+  // Check if already extracted and valid
   try {
-    await Deno.remove(extractDir, { recursive: true });
-  } catch {
-    // best effort cleanup
+    await Deno.stat(join(extractDir, "package"));
+    return extractDir;
+  } catch { /* not extracted yet */ }
+
+  // Clean any partial extraction
+  try { await Deno.remove(extractDir, { recursive: true }); } catch { /* ok */ }
+
+  let tgzPath: string;
+  try {
+    tgzPath = await cacheTarball(tarballUrl, tmp);
+  } catch (e) {
+    throw new Error(`failed to download tarball: ${(e as Error).message}`);
   }
 
-  return skillMdContent;
+  await Deno.mkdir(extractDir, { recursive: true });
+  await checkTarballEntries(tgzPath);
+
+  const p = new Deno.Command("tar", {
+    args: ["-xzf", tgzPath, "-C", extractDir],
+  });
+  const out = await p.output();
+  if (!out.success) {
+    const stderr = new TextDecoder().decode(out.stderr);
+    throw new Error(`tar extract failed: ${stderr}`);
+  }
+
+  await verifyNoTraversal(extractDir);
+  return extractDir;
+}
+
+export async function listSkillFiles(
+  name: string,
+  version: string,
+  tarballUrl: string,
+): Promise<{ path: string; size: number }[]> {
+  const extractDir = await ensureSkillExtracted(name, version, tarballUrl);
+  const pkgDir = join(extractDir, "package");
+  const files: { path: string; size: number }[] = [];
+
+  async function walk(dir: string, prefix: string): Promise<void> {
+    for await (const entry of Deno.readDir(dir)) {
+      const fullPath = join(dir, entry.name);
+      const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isFile) {
+        files.push({ path: relPath, size: (await Deno.stat(fullPath)).size });
+      } else if (entry.isDirectory) {
+        await walk(fullPath, relPath);
+      }
+    }
+  }
+
+  await walk(pkgDir, "");
+  return files.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+export async function readSkillFile(
+  name: string,
+  version: string,
+  tarballUrl: string,
+  filePath: string,
+): Promise<string> {
+  const extractDir = await ensureSkillExtracted(name, version, tarballUrl);
+  const fullPath = join(extractDir, "package", filePath);
+
+  // Prevent path traversal in filePath
+  const realDir = await Deno.realPath(extractDir);
+  const realFile = await Deno.realPath(fullPath);
+  if (!realFile.startsWith(realDir + "/") && realFile !== realDir) {
+    throw new Error(`path traversal detected: ${filePath}`);
+  }
+
+  return await Deno.readTextFile(fullPath);
 }

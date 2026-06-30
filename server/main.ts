@@ -1,5 +1,5 @@
 import { Hono, cors, logger, marked } from "./deps.ts";
-import { extractSkillMd } from "./tarball.ts";
+import { extractSkillMd, listSkillFiles, readSkillFile } from "./tarball.ts";
 import { join, extname } from "node:path";
 
 const REGISTRY_URL = Deno.env.get("REGISTRY_URL") || "http://localhost:4873";
@@ -195,6 +195,50 @@ app.get("/api/skills/:name/SKILL.md", async (c) => {
       frontmatter,
       html: safeHtml,
     });
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 500);
+  }
+});
+
+// --- API: list skill files ---
+app.get("/api/skills/:name/files", async (c) => {
+  const name = `@skill/${c.req.param("name")}`;
+  const filePath = c.req.query("path");
+  try {
+    // Fetch package metadata to get tarball URL
+    const metaUrl = `${REGISTRY_URL}/${encodeURIComponent(name)}`;
+    const metaRes = await fetch(metaUrl, { headers: authHeaders() });
+    if (!metaRes.ok) return c.json({ error: "package not found" }, 404);
+
+    const meta = await metaRes.json();
+    const versions = meta.versions;
+    if (!versions) return c.json({ error: "no versions" }, 404);
+
+    const distTag = meta["dist-tags"]?.latest;
+    const version = distTag && versions[distTag]
+      ? distTag
+      : Object.keys(versions).pop()!;
+    const pkg = versions[version];
+    const tarballUrl = pkg.dist?.tarball;
+    if (!tarballUrl) return c.json({ error: "no tarball" }, 500);
+
+    if (filePath) {
+      // Return single file content
+      try {
+        const content = await readSkillFile(name, version, tarballUrl, filePath);
+        const ext = extname(filePath).toLowerCase();
+        const mime = MIME[ext] || "text/plain";
+        return new Response(content, {
+          headers: { "Content-Type": `${mime}; charset=utf-8` },
+        });
+      } catch {
+        return c.json({ error: "file not found" }, 404);
+      }
+    }
+
+    // Return file tree
+    const files = await listSkillFiles(name, version, tarballUrl);
+    return c.json({ version, files });
   } catch (e) {
     return c.json({ error: (e as Error).message }, 500);
   }

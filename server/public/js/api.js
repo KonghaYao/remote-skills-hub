@@ -17,6 +17,10 @@ const API = {
     return this.fetchJson(`/api/skills/${encodeURIComponent(name)}/SKILL.md`);
   },
 
+  getSkillFiles(name) {
+    return this.fetchJson(`/api/skills/${encodeURIComponent(name)}/files`);
+  },
+
   search(q) {
     return this.fetchJson(`/api/search?q=${encodeURIComponent(q)}`);
   },
