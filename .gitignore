@@ -142,4 +142,15 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 .npmrc
-.npmrc
+
+# Verdaccio local runtime
+verdaccio/verdaccio/
+verdaccio/config.local.yaml
+
+# Server cache
+server/cache/
+
+# Root-level files from Verdaccio operations
+/package.json
+/package-lock.json
+/deno.lock

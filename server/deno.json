@@ -4,8 +4,7 @@
     "start": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run main.ts"
   },
   "imports": {
-    "hono": "npm:hono@^4",
-    "hono/deno": "npm:hono/deno",
+    "hono": "jsr:@hono/hono@^4",
     "marked": "npm:marked@^15"
   },
   "compilerOptions": {

@@ -1,14 +1,15 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:hono@4": "4.12.27",
+    "jsr:@hono/hono@4": "4.12.27",
     "npm:marked@15": "15.0.12"
   },
+  "jsr": {
+    "@hono/hono@4.12.27": {
+      "integrity": "3acc640592008e43f7048e8e53275203e0da84fbcd50201121195da7560583dc"
+    }
+  },
   "npm": {
-    "hono@4.12.27": {
-      "integrity": "sha512-1yrb/+w6HWQJrUCLkJ2IF5jNIPvvFkblV5RNOYl6bV+OA6p9GLcMpHFFGTosSvHvcAUibuUukRqhlYI4z32C7Q==",
-      "tarball": "https://registry.npmmirror.com/hono/-/hono-4.12.27.tgz"
-    },
     "marked@15.0.12": {
       "integrity": "sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==",
       "bin": true,
@@ -17,7 +18,7 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:hono@4",
+      "jsr:@hono/hono@4",
       "npm:marked@15"
     ]
   }
