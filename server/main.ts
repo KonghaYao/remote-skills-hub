@@ -5,6 +5,12 @@ const REGISTRY_TOKEN = Deno.env.get("REGISTRY_TOKEN");
 const port = parseInt(Deno.env.get("PORT") || "3000");
 const INDEX_HTML = Deno.readTextFileSync("./public/index.html");
 
+function authHeaders(): Record<string, string> {
+  return REGISTRY_TOKEN
+    ? { Authorization: `Bearer ${REGISTRY_TOKEN}` }
+    : {};
+}
+
 const app = new Hono();
 
 app.use("*", logger());
@@ -37,8 +43,36 @@ app.all("/npm/*", async (c) => {
 });
 
 // --- Extended APIs (stubs for now) ---
-app.get("/api/skills", (c) => {
-  return c.json({ skills: [], total: 0 });
+app.get("/api/skills", async (c) => {
+  const page = parseInt(c.req.query("page") || "1");
+  const limit = parseInt(c.req.query("limit") || "20");
+  const tag = c.req.query("tag");
+
+  const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill/*&size=250`;
+  const res = await fetch(searchUrl, {
+    headers: { "Accept": "application/json", ...authHeaders() },
+  });
+  if (!res.ok) return c.json({ error: "registry unavailable" }, 502);
+
+  const data = await res.json() as { objects: Array<{ package: { name: string; version: string; description: string; date: string }; score: { final: number } }> };
+
+  let skills = (data.objects || []).map((o) => ({
+    name: o.package.name,
+    version: o.package.version,
+    description: o.package.description || "",
+    updated: o.package.date,
+    score: o.score?.final ?? 0,
+  }));
+
+  if (tag) {
+    skills = skills.filter((s) => s.description?.includes(`#${tag}`));
+  }
+
+  const total = skills.length;
+  const start = (page - 1) * limit;
+  const items = skills.slice(start, start + limit);
+
+  return c.json({ skills: items, total, page, limit });
 });
 
 app.get("/api/skills/:name", (c) => {
