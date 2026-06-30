@@ -32,7 +32,7 @@ app.all("/npm/*", async (c) => {
     method: c.req.method,
     headers: {
       "Accept": "application/json",
-      ...(REGISTRY_TOKEN ? { Authorization: `Bearer ${REGISTRY_TOKEN}` } : {}),
+      ...authHeaders(),
     },
   });
 
@@ -42,27 +42,35 @@ app.all("/npm/*", async (c) => {
   });
 });
 
-// --- Extended APIs (stubs for now) ---
+// --- Extended APIs ---
 app.get("/api/skills", async (c) => {
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  let page = parseInt(c.req.query("page") || "1");
+  let limit = parseInt(c.req.query("limit") || "20");
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 20;
   const tag = c.req.query("tag");
 
-  const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill/*&size=250`;
-  const res = await fetch(searchUrl, {
-    headers: { "Accept": "application/json", ...authHeaders() },
-  });
-  if (!res.ok) return c.json({ error: "registry unavailable" }, 502);
+  let skills: Array<{ name: string; version: string; description: string; updated: string; score: number }> = [];
+  try {
+    const searchUrl = `${REGISTRY_URL}/-/v1/search?text=@skill/*&size=250`;
+    const res = await fetch(searchUrl, {
+      headers: { "Accept": "application/json", ...authHeaders() },
+    });
+    if (!res.ok) return c.json({ error: "registry unavailable" }, 502);
 
-  const data = await res.json() as { objects: Array<{ package: { name: string; version: string; description: string; date: string }; score: { final: number } }> };
+    type RegistryObject = { package?: { name: string; version: string; description: string; date: string }; score?: { final: number } };
+    const data = await res.json() as { objects?: RegistryObject[] };
 
-  let skills = (data.objects || []).map((o) => ({
-    name: o.package.name,
-    version: o.package.version,
-    description: o.package.description || "",
-    updated: o.package.date,
-    score: o.score?.final ?? 0,
-  }));
+    skills = (data.objects || []).filter((o) => o.package).map((o) => ({
+      name: o.package!.name,
+      version: o.package!.version,
+      description: o.package!.description || "",
+      updated: o.package!.date,
+      score: o.score?.final ?? 0,
+    }));
+  } catch (err) {
+    return c.json({ error: String(err) }, 502);
+  }
 
   if (tag) {
     skills = skills.filter((s) => s.description?.includes(`#${tag}`));
