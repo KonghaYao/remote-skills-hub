@@ -1,0 +1,16 @@
+{
+  "name": "@skill/hello-world",
+  "version": "1.0.0",
+  "description": "A minimal example skill for the Skill Hub platform #demo #getting-started",
+  "main": "SKILL.md",
+  "skill": {
+    "category": "examples",
+    "tags": ["demo", "getting-started"]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/skill-hello-world"
+  },
+  "keywords": ["skill", "skill-hub"],
+  "license": "MIT"
+}
