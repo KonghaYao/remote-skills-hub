@@ -1,0 +1,30 @@
+services:
+  verdaccio:
+    image: verdaccio/verdaccio:6
+    container_name: skill-hub-verdaccio
+    ports:
+      - "4873:4873"
+    volumes:
+      - verdaccio-storage:/verdaccio/storage
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+    restart: unless-stopped
+
+  server:
+    build: ./server
+    container_name: skill-hub-server
+    ports:
+      - "3000:3000"
+    environment:
+      REGISTRY_URL: http://verdaccio:4873
+      REGISTRY_TOKEN: ${REGISTRY_READ_TOKEN:-}
+      CACHE_DIR: /app/cache
+      PORT: "3000"
+    volumes:
+      - server-cache:/app/cache
+    depends_on:
+      - verdaccio
+    restart: unless-stopped
+
+volumes:
+  verdaccio-storage:
+  server-cache:

@@ -1,30 +1,89 @@
 services:
+  # ========== npm registry ==========
   verdaccio:
     image: verdaccio/verdaccio:6
     container_name: skill-hub-verdaccio
-    ports:
-      - "4873:4873"
+    restart: unless-stopped
     volumes:
       - verdaccio-storage:/verdaccio/storage
       - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
-    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4873/-/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
+  # ========== deno server + portal ==========
   server:
-    build: ./server
+    image: ghcr.io/${GH_REPO:-your-org/remote-skills-hub}/server:${IMAGE_TAG:-latest}
     container_name: skill-hub-server
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       REGISTRY_URL: http://verdaccio:4873
-      REGISTRY_TOKEN: ${REGISTRY_READ_TOKEN:-}
+      REGISTRY_TOKEN: ${REGISTRY_READ_TOKEN:?err: set REGISTRY_READ_TOKEN in .env}
       CACHE_DIR: /app/cache
       PORT: "3000"
     volumes:
       - server-cache:/app/cache
+    networks:
+      - internal
     depends_on:
-      - verdaccio
-    restart: unless-stopped
+      verdaccio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/skills"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ========== reverse proxy (optional, for HTTPS) ==========
+  # Uncomment the nginx block below when you have a domain + SSL cert.
+  # Then remove the `ports` from the server service above.
+
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: skill-hub-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/certs:/etc/nginx/certs:ro
+  #   networks:
+  #     - internal
+  #   depends_on:
+  #     - server
 
 volumes:
   verdaccio-storage:
+    driver: local
   server-cache:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge
