@@ -150,6 +150,10 @@ verdaccio/config.local.yaml
 # Server cache
 server/cache/
 
+# agent-npm managed skill directories
+.agents/
+.claude/skills/
+
 # Root-level files from Verdaccio operations
 /package.json
 /package-lock.json

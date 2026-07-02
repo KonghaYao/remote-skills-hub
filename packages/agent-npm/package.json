@@ -1,0 +1,15 @@
+{
+  "name": "agent-npm",
+  "version": "1.0.0",
+  "description": "CLI tool for managing AI agent skills from a remote npm registry",
+  "main": "src/cli.js",
+  "bin": {
+    "agent-npm": "./bin/agent-npm.js"
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "keywords": ["skill", "agent", "cli", "npm", "ai"],
+  "license": "MIT"
+}

@@ -4,7 +4,8 @@ import { join, extname } from "node:path";
 
 const REGISTRY_URL = Deno.env.get("REGISTRY_URL") || "http://localhost:4873";
 const REGISTRY_TOKEN = Deno.env.get("REGISTRY_TOKEN");
-const port = parseInt(Deno.env.get("PORT") || "3000");
+const PORT_ENV = Deno.env.get("PORT");
+const port = PORT_ENV ? parseInt(PORT_ENV) : 0; // 0 = random available port
 const PUBLIC_DIR = join(Deno.cwd(), "public");
 const INDEX_HTML = Deno.readTextFileSync(join(PUBLIC_DIR, "index.html"));
 
@@ -268,10 +269,6 @@ app.get("/api/search", async (c) => {
   }
 });
 
-try {
-  Deno.serve({ port }, app.fetch);
-  console.log(`Server running on http://localhost:${port}`);
-} catch (e) {
-  console.error("Failed to start server:", (e as Error).message);
-  Deno.exit(1);
-}
+const server = Deno.serve({ port }, app.fetch);
+const actualPort = (server.addr as Deno.NetAddr).port;
+console.log(`Server running on http://localhost:${actualPort}`);
