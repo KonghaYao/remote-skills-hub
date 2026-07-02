@@ -1,182 +1,182 @@
 # agent-npm
 
-AI Agent Skill 包管理器。从 npm registry 安装 `@skill/*` 包到本地 `.agents/` 工作区，并自动链接到 agent 框架标准目录。
+AI Agent Skill package manager. Installs `@skill/*` packages from an npm registry into a local `.agents/` workspace and automatically links them to agent framework discovery directories.
 
-## 安装
+## Install
 
 ```bash
 npm install -g agent-npm
 ```
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 进入你的项目目录
+# Navigate to your project
 cd my-project
 
-# 初始化 skill 工作区
+# Initialize the skill workspace
 agent-npm init
 
-# 安装 skill
+# Install a skill
 agent-npm install @skill/hello-world
 
-# 查看已安装
+# List installed skills
 agent-npm list
 ```
 
-安装后的目录结构：
+Directory structure after install:
 
 ```
 my-project/
 ├── .agents/
-│   ├── package.json          # 依赖清单
-│   ├── package-lock.json     # 版本锁定
-│   ├── .npmrc                # registry 配置
-│   ├── skills/               # agent 发现目录 (符号链接)
+│   ├── package.json          # dependency manifest
+│   ├── package-lock.json     # version lock
+│   ├── .npmrc                # registry config
+│   ├── skills/               # agent discovery dir (symlinks)
 │   │   └── hello-world → ../node_modules/@skill/hello-world
 │   └── node_modules/
 │       └── @skill/
 │           └── hello-world/
-│               ├── SKILL.md  # AI agent 指令文件
+│               ├── SKILL.md  # AI agent instructions
 │               └── package.json
 └── ...
 ```
 
-## 命令
+## Commands
 
-### init — 初始化工作区
+### init — Initialize workspace
 
 ```bash
 agent-npm init
 ```
 
-在项目根目录创建 `.agents/` 目录，包含 `package.json` 和 `.npmrc`。
+Creates `.agents/` directory with `package.json` and `.npmrc`.
 
-### install — 安装 skill
+### install — Install skills
 
 ```bash
-# 安装最新版
+# Latest version
 agent-npm install @skill/hello-world
 
-# 安装指定版本
+# Specific version
 agent-npm install @skill/hello-world@1.2.0
 
-# 安装多个
+# Multiple packages
 agent-npm install @skill/hello-world @skill/code-review
 
-# 不带参数 = 安装所有 (从 .agents/package.json 读取)
+# No args = install all from .agents/package.json
 agent-npm install
 ```
 
-安装成功后会**自动执行 link**，创建符号链接到 `.agents/skills/`。
+Auto-links to `.agents/skills/` on success.
 
-### uninstall — 移除 skill
+### uninstall — Remove skills
 
 ```bash
 agent-npm uninstall @skill/hello-world
 ```
 
-### list — 列出已安装
+### list — List installed skills
 
 ```bash
 agent-npm list
 
-# 输出:
+# Output:
 # .agents/node_modules/@skill/
 # └── hello-world @1.0.0
 ```
 
-### search — 搜索 registry
+### search — Search registry
 
 ```bash
 agent-npm search hello
 ```
 
-### info — 查看详情
+### info — Show skill details
 
 ```bash
 agent-npm info hello-world
 
-# 输出包元数据、版本列表、SKILL.md 信息、文件树
+# Outputs metadata, version history, SKILL.md info, file tree
 ```
 
-### which — 查看安装路径
+### which — Show install path
 
 ```bash
 agent-npm which hello-world
 
-# 输出:
+# Output:
 # /path/to/project/.agents/node_modules/@skill/hello-world
 ```
 
-### update — 更新版本
+### update — Update to latest
 
 ```bash
-# 更新全部
+# Update all
 agent-npm update
 
-# 更新指定
+# Update specific
 agent-npm update hello-world
 ```
 
-### outdated — 检查过期
+### outdated — Check for newer versions
 
 ```bash
 agent-npm outdated
 ```
 
-### link / unlink — 管理符号链接
+### link / unlink — Manage symlinks
 
 ```bash
-# 链接所有已安装 skill → .agents/skills/ (默认)
+# Link all installed → .agents/skills/ (default)
 agent-npm link
 
-# 链接到 .claude/skills/ (Claude Code 格式)
+# Link to .claude/skills/ (Claude Code format)
 agent-npm link --agent claude
 
-# 链接到全局目录 ~/.agents/skills/
+# Link to global ~/.agents/skills/
 agent-npm link --global
 
-# 查看链接状态
+# Check link status
 agent-npm link --status
 
-# 移除所有链接
+# Remove all links
 agent-npm unlink
 
-# 移除指定链接
+# Remove specific link
 agent-npm unlink hello-world
 ```
 
-### config — 配置管理
+### config — Manage configuration
 
 ```bash
-# 查看当前配置
+# Show current config
 agent-npm config
 
-# 设置 registry
+# Set registry
 agent-npm config set registry http://my-hub:4873
 
-# 获取单个配置
+# Get a value
 agent-npm config get registry
 
-# 删除配置
+# Delete a value
 agent-npm config delete registry
 ```
 
-配置文件位于 `~/.agent-npmrc`。
+Config file: `~/.agent-npmrc`.
 
-## 工作方式
+## How It Works
 
-1. **安装** → npm install 到 `.agents/node_modules/@skill/`
-2. **自动 link** → 创建符号链接 `.agents/skills/<name>` → `node_modules/@skill/<name>`
-3. **Agent 发现** → 框架读取 `.agents/skills/<name>/SKILL.md` 加载指令
+1. **Install** → npm install to `.agents/node_modules/@skill/`
+2. **Auto-link** → symlink `.agents/skills/<name>` → `node_modules/@skill/<name>`
+3. **Agent discovery** → frameworks read `.agents/skills/<name>/SKILL.md`
 
-## 支持 --agent 参数
+## --agent Flags
 
-| 命令 | 效果 |
+| Command | Effect |
 |------|------|
-| `agent-npm link` | → `.agents/skills/` (默认) |
+| `agent-npm link` | → `.agents/skills/` (default) |
 | `agent-npm link --agent claude` | → `.claude/skills/` |
 | `agent-npm link --global` | → `~/.agents/skills/` |
 
-`unlink` 和 `--status` 同样支持上述标志。
+`unlink` and `--status` support the same flags.
