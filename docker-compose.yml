@@ -19,10 +19,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    deploy:
-      resources:
-        limits:
-          memory: 512M
 
   # ========== deno server + portal ==========
   server:
@@ -54,10 +50,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    deploy:
-      resources:
-        limits:
-          memory: 256M
 
   # ========== reverse proxy (optional, for HTTPS) ==========
   # Uncomment the nginx block below when you have a domain + SSL cert.
